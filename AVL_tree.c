@@ -1,20 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-
-//Se o sistema for Windows adiciona determinada biblioteca, e definindo comandos de limpar e esperar
-#ifdef WIN32
-    #include <stdio.h>
-    #include <windows.h>
-    #define LIMPA_TELA system("cls")
-    #define LIMPA_BUFFER fflush(stdin)
-//Sen�o for Windows (ex.: Linux)
-#else
-    #include <stdio_ext.h>
-    #include <unistd.h>
-    #define LIMPA_TELA system("clear")
-    #define LIMPA_BUFFER __fpurge(stdin)
-#endif
-
+#include <stdio.h>
 
 // Define a estrutura do no
 typedef struct no {
@@ -84,8 +70,6 @@ void verifica_escreve(No* t) {
       listagem(t);
     }
     printf("\n\nPressione a tecla Enter para retornar.\n");
-    LIMPA_BUFFER;
-    getchar();
 }
 
 /*
@@ -301,8 +285,7 @@ int insere(No **t) {
 *  Exibe as opcoes ao usuario
 */
 char menuPrincipal() {
-    char opcao[50];
-    LIMPA_TELA;
+    int opcao;
     printf("|--------------------------|\n");
     printf("|        Arvore AVL        |\n");
     printf("|--------------------------|\n");
@@ -311,13 +294,8 @@ char menuPrincipal() {
     printf("2 - Listar arvore\n");
     printf("0 - Sair\n");
     printf("\nInforme o numero da operacao desejada: ");
-    LIMPA_BUFFER;
-    scanf("%s", opcao);
-    LIMPA_BUFFER;
-    if (strlen(opcao)>1){
-      return 'x';
-    }
-    return opcao[0];
+    scanf("%d", &opcao);
+    return opcao;
 }
 
 /*
@@ -325,25 +303,22 @@ char menuPrincipal() {
  *
  */
 int main() {
-    char opcao;
+    int opcao;
     No *t = NULL;
 
     do {
         opcao = menuPrincipal();
         switch (opcao){
-            case '1':
+            case 1:
                 insere(&t);
                 break;
-            case '2':
+            case 2:
                 verifica_escreve(t);
                 break;
-            case '0':
+            case 0:
                 exit(0);
             default:
                 printf("\n\nOpcao inexistente!\n");
-                printf("\nPressione a tecla Enter para tentar novamente.\n");
-                LIMPA_BUFFER;
-                getchar();
         }
     } while (1);
     return 0;
