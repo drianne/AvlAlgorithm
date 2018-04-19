@@ -1,14 +1,3 @@
-/*
- *  Arvore de busca balanceamentoanceada AVL (Adelson-Velskii e Landis)
- *
- *  Autor: Lucas Arthur Lermen
- *  Matrícula: 16/0012961
- *  Disciplina: EDA (Estrutura de Dados e Algoritmos)
- *  UnB / FGA
- *
- *
- */
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -26,49 +15,13 @@
     #define LIMPA_BUFFER __fpurge(stdin)
 #endif
 
-FILE *arquivoVideo;
-char nomeArquivoVideo[80];
-
-
-/*
-*  Abre o arquivo para leitura e gravacao (r+)
-*  Em modo binario (b)
-*  Se o arquivo nao existir, sera criado
-*/
-FILE * abrirLeituraGravacao(char nomeArquivo[80]) {
-    FILE * arq = NULL;
-    if((arq = fopen(nomeArquivo, "rb+")) == NULL) {
-        printf("\n O arquivo '%s' nao pode ser aberto!!\n", nomeArquivo);
-        getchar();
-        exit(1);
-    }
-    return arq;
-}
-
-/*
-* Fecha o arquivo que estiver aberto
-* Esta funcao deve ser chamada para evitar que fique aberta a conexao entre o programa e o arquivo em disco
-*/
-void fecharArquivo(FILE * arq) {
-    fclose(arq);
-}
 
 // Define a estrutura do no
 typedef struct no {
-  char chaveValor[7];
-  int linhaArquivo;
+  int valor;
   int balanceamento;   /* hDireita - hEsquerda */
   struct no *esquerda, *direita;
 } No;
-
-// Define a estrutura do video
-typedef struct video {
-    char chaveValor[7];
-    char titulo[255];
-    char midia[50];
-    float preco;
-    char genero[255];
-} Video;
 
 /*
  * Calcula a altura da arvore ou de uma subarvore
@@ -89,10 +42,9 @@ int altura(No* t) {
  * o segundo eh o numero da linha no arquivo
  * os demais sao os 'nos' da esquerda e da direita
 */
-No* cria(char* chaveValor, int linhaArquivo, No* esquerda, No* direita) {
+No* cria(int valor, No* esquerda, No* direita) {
     No* n = (No*) malloc (sizeof(No));
-    strcpy(n->chaveValor, chaveValor);
-    n->linhaArquivo = linhaArquivo;
+    n->valor = valor;
     n->balanceamento = altura(direita) - altura(esquerda);
     n->esquerda = esquerda;
     n->direita = direita;
@@ -108,17 +60,16 @@ int verifica_AVL(No* t) {
     return abs(altura(t->direita) - altura(t->esquerda)) <= 1;
 }
 
-/*
- * escreve os valores da arvore em ordem
- * funcao recursiva que escreve primeiro os valores aa esquerda, depois o proprio valor e por ultimo os valores aa direita
- */
-void escreve(No* r) {
-    if (r != NULL) {
-        escreve(r->esquerda);
-        printf("%s(%d)(%d) \n", r->chaveValor, r->balanceamento, r->linhaArquivo);
-        escreve(r->direita);
-    }
+void listagem(No *t) {
+
+  // Verifica se a arvore esta vazia
+   if(t != NULL){
+     listagem(t->esquerda);
+     printf("\n%d", t->valor);
+     listagem(t->direita);
+   }
 }
+
 
 /*
  * verifica_escreve primeiro verifica se a arvore esta balanceada (eh AVL)
@@ -126,13 +77,15 @@ void escreve(No* r) {
  */
 void verifica_escreve(No* t) {
     if (t == NULL) {
-        printf("\nArvore vazia!\n");
+      printf("\nArvore vazia!\n");
+    }else if (!verifica_AVL(t)) {
+      printf("\nArvore nao esta balanceada(AVL)!\n");
+    }else{
+      listagem(t);
     }
-    if (!verifica_AVL(t)) {
-        printf("\nArvore nao esta balanceada(AVL)!\n");
-    }
-    escreve(t);
-    printf("\n");
+    printf("\n\nPressione a tecla Enter para retornar.\n");
+    LIMPA_BUFFER;
+    getchar();
 }
 
 /*
@@ -225,29 +178,29 @@ void direitaEsquerda(No** r) {
 
 
 /*
- * aux_insere ira incluir chaveValor e linhaArquivo no 'no' "t", quando este for nulo
+ * aux_insere ira incluir valor no 'no' "t", quando este for nulo
  * enquanto o 'no' n�o for nulo, a funcao ira comparar o valor de "t" com o valor a ser inserido
- * e chamar a si propria recursivamente ate encontrar o ponto da arvore onde "chaveValor" deve ser incluido
+ * e chamar a si propria recursivamente ate encontrar o ponto da arvore onde "valor" deve ser incluido
  *
  *   *cresceu indica se a insercao teve sucesso
  */
-int aux_insere(No** t, char* chaveValor, int linhaArquivo, int *cresceu) {
+int aux_insere(No** t, int valor, int *cresceu) {
     // Se o 'no' atual for nulo, inclui os valores neste 'no'
     if (*t == NULL) {
-        *t = cria(chaveValor, linhaArquivo, NULL, NULL);
+        *t = cria(valor, NULL, NULL);
         *cresceu = 1;
         return 1;
     }
 
     // Se o valor a ser inserido ja existir na arvore, nao sera incluido
-    if (strcasecmp(chaveValor, (*t)->chaveValor) == 0) {
+    if (valor == (*t)->valor) {
         return 0;
     }
 
     // Se o valor a ser inserido eh MENOR que o valor do 'no' atual, a chamada recursiva ocorrera a ESQUERDA
-    if (strcasecmp(chaveValor, (*t)->chaveValor) < 0) {
+    if (valor < (*t)->valor) {
         // Se a inclusao aa esquerda tiver sucesso, faz o balanceamento
-        if (aux_insere(&(*t)->esquerda, chaveValor, linhaArquivo, cresceu)) {
+        if (aux_insere(&(*t)->esquerda, valor, cresceu)) {
             if (*cresceu) {
                 switch ((*t)->balanceamento) {
                 case -1:
@@ -278,7 +231,7 @@ int aux_insere(No** t, char* chaveValor, int linhaArquivo, int *cresceu) {
     // logo a chamada recursiva ocorrera a DIREITA
 
     // Se a inclusao aa direita tiver sucesso, faz o balanceamento
-    if (aux_insere(&(*t)->direita, chaveValor, linhaArquivo, cresceu)) {
+    if (aux_insere(&(*t)->direita, valor, cresceu)) {
         if (*cresceu) {
             switch ((*t)->balanceamento) {
             case -1:
@@ -311,149 +264,39 @@ int aux_insere(No** t, char* chaveValor, int linhaArquivo, int *cresceu) {
  * chama aux_insere que eh a funcao que identificara o 'no' da arvore onde o valor deve ser incluido
  * se o valor ja existir, nao sera incluido novamente e o retorno sera 0. Se for incluido, o retorno sera 1
  */
-int insere(No **t, char *chaveValor, int linhaArquivo) {
-  int cresceu;
-  return aux_insere(t, chaveValor, linhaArquivo, &cresceu);
+int insere(No **t) {
+  int cresceu, valor;
+  printf("Digite o valor que deseja inserir: " );
+  scanf("%d", &valor );
+  return aux_insere(t, valor, &cresceu);
 }
 
-/*
- *  carrega o arquivo informado na memoria
- *  o arquivo eh carregado na arvore cujo 'no' raiz eh o retorno deste metodo
- */
-No* carrega() {
-    char arquivoDigitado;
-    printf("\nDigite o nome do arquivo:\n");
-    scanf("%s", &arquivoDigitado );
-    // Validar o conteudo digitado
-    strcpy(nomeArquivoVideo, &arquivoDigitado);
-
-    // Verifica se o nome do arquivo foi informado
-    if (nomeArquivoVideo == NULL || strcmp(nomeArquivoVideo, "") == 0) {
-        printf("\n\nErro: nome do arquivo de video nao informado\n");
-        getchar();
-        return NULL;
-    }
-    No *t = NULL;
-    char linha[255], chaveValor[7], titulo[255], midia[50], genero[255];
-    float preco;
-
-    arquivoVideo = abrirLeituraGravacao(nomeArquivoVideo);
-    // Descarta a primeira linha que contem titulos
-    int linhaarquivo = 1;
-    if (!feof(arquivoVideo)) {
-        fgets(linha, sizeof(linha), arquivoVideo);
-    }
-
-    // Percorre todo o arquivo
-    while(!feof(arquivoVideo)) {
-        // Le um registro do arquivo e armazena na arvore
-        fscanf(arquivoVideo,"%s %s %s %f %s\n", chaveValor, titulo, midia, &preco, genero);
-        linhaarquivo = linhaarquivo + 1;
-        insere(&t, chaveValor, linhaarquivo);
-    }
-
-    fecharArquivo(arquivoVideo);
-
-    printf("\n\n");
-    printf("|-------------------------------------------|\n");
-    printf("|  Arquivo carregado e pronto para pesquisa |\n");
-    printf("|-------------------------------------------|\n");
-    printf("\n\nPressione a tecla Enter para retornar.\n");
-    LIMPA_BUFFER;
-    getchar();
-    return t;
-}
-
-/*
- * pesquisaArquivo ira localizar o conteudo existente na linha informada no 'no' recebido como parametro
- * O metodo retorna o video com o conteudo localizado
- */
-Video* pesquisaArquivo(No *noValor) {
-   if (nomeArquivoVideo == NULL || strcmp(nomeArquivoVideo, "") == 0) {
-        printf("\n\nErro: nome do arquivo de video nao informado");
-    }
-    char linha[255];
-    Video *v = (Video*) malloc(sizeof(Video));
-    arquivoVideo = abrirLeituraGravacao(nomeArquivoVideo);
-    // Descarta as linhas anteriores
-    int linhaarquivo = 1;
-    while(!feof(arquivoVideo) && (linhaarquivo < (noValor->linhaArquivo))) {
-        linhaarquivo = linhaarquivo + 1;
-        fgets(linha, sizeof(linha), arquivoVideo);
-    }
-    if (!feof(arquivoVideo)) {
-        // Recupera o conteudo da linha informada
-        fscanf(arquivoVideo,"%s %s %s %f %s\n", v->chaveValor, v->titulo, v->midia, &v->preco, v->genero);
-    } else {
-        // ERRO - NAO DEVE CHEGAR NO FIM
-    }
-    fecharArquivo(arquivoVideo);
-    return v;
-}
 
 /*
  *  localizaValor eh um metodo recursivo que percorre a arvore cujo 'no' raiz foi recebido no primeiro parametro
  *  em busca do valor informado no segundo parametro
  */
-No* localizaValor(No *t, char* chavePesquisa) {
-    // Se nao encontrou, retorna NULL
-    if (t == NULL) {
-        return t;
-    }
-    // Se encontrou retorna o 'no' que contem o valor
-    if (strcasecmp(chavePesquisa, t->chaveValor) == 0) {
-        return t;
-    }
-
-    if (strcasecmp(chavePesquisa, t->chaveValor) < 0) {
-        // Se o valor eh MENOR que o valor do 'no' atual, a chamada recursiva ocorrera a ESQUERDA
-        return localizaValor(t->esquerda, chavePesquisa);
-    } else {
-        // Se o valor eh MAIOR que o valor do 'no' atual, a chamada recursiva ocorrera a DIREITA
-        return localizaValor(t->direita, chavePesquisa);
-    }
-
-}
-
-/*
- * IniciaPesquisa eh o metodo que pergunta ao usuario qual valor deseja pesquisar
- */
-void iniciaPesquisa(No *t) {
-
-  // Verifica se a arvore esta vazia
-  if (t == NULL) {
-      printf("\n\nA arvore esta vazia. Use a opcao de carregar primeiro.\n");
-
-  } else {
-
-      // Localizar o valor na arvore
-      No *noValor = localizaValor(t, chavePesquisa);
-
-      // Exibe o resultado
-      printf("\n");
-      printf("|--------------------------|\n");
-      printf("|  Resultado               |\n");
-      printf("|--------------------------|\n");
-      if (noValor == NULL) {
-          printf("\n%s nao catalogado!!!\n\n", chavePesquisa);
-      } else {
-          printf("\n%s localizado na linha %d\n\n", chavePesquisa, noValor->linhaArquivo);
-
-          // Recupera o valor no arquivo
-          Video *dadosVideo = pesquisaArquivo(noValor);
-
-          printf("Titulo: %s\n", dadosVideo->titulo);
-          printf("Midia: %s\n" , dadosVideo->midia);
-          printf("Preco: %.2f\n" , dadosVideo->preco);
-          printf("Genero: %s\n", dadosVideo->genero);
-      }
-  }
-  printf("\n\nPressione a tecla Enter para retornar.\n");
-  LIMPA_BUFFER;
-  getchar();
+// No* localizaValor(No *t, int chavePesquisa) {
+//     // Se nao encontrou, retorna NULL
+//     if (t == NULL) {
+//         return t;
+//     }
+//     // Se encontrou retorna o 'no' que contem o valor
+//     if (valor == (*t)->valor) {
+//         return t;
+//     }
+//
+//     if (valor < (*t)->valor) {
+//         // Se o valor eh MENOR que o valor do 'no' atual, a chamada recursiva ocorrera a ESQUERDA
+//         return localizaValor(t->esquerda, chavePesquisa);
+//     } else {
+//         // Se o valor eh MAIOR que o valor do 'no' atual, a chamada recursiva ocorrera a DIREITA
+//         return localizaValor(t->direita, chavePesquisa);
+//     }
+//
+// }
 
 
-}
 /*
 *  Exibe as opcoes ao usuario
 */
@@ -461,11 +304,11 @@ char menuPrincipal() {
     char opcao[50];
     LIMPA_TELA;
     printf("|--------------------------|\n");
-    printf("|    Catalogo de filmes    |\n");
+    printf("|        Arvore AVL        |\n");
     printf("|--------------------------|\n");
     printf("\nEscolha sua opcao\n");
-    printf("1 - Carregar dados para pesquisa\n");
-    printf("2 - Relatorio\n");
+    printf("1 - Inserir valor na arvore\n");
+    printf("2 - Listar arvore\n");
     printf("0 - Sair\n");
     printf("\nInforme o numero da operacao desejada: ");
     LIMPA_BUFFER;
@@ -489,10 +332,10 @@ int main() {
         opcao = menuPrincipal();
         switch (opcao){
             case '1':
-                t = carrega();
+                insere(&t);
                 break;
             case '2':
-                iniciaPesquisa(t);
+                verifica_escreve(t);
                 break;
             case '0':
                 exit(0);
