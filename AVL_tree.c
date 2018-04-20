@@ -20,6 +20,11 @@ int altura(No* t) {
     return hEsquerda > hDireita ? hEsquerda + 1 : hDireita + 1; // Retorna a maior altura calculada mais o pr�prio n�
 }
 
+No *remover_no(No *t);
+No *remover_no_arvore(No *t, int valor) ;
+No *rotacao_simples_direita(No *t);
+No *rotacao_simples_esquerda(No *t);
+
 // Cria um 'no' na arvore
 
 No* cria(int valor, No* esquerda, No* direita) {
@@ -53,8 +58,8 @@ void listagem(No *t) {
 void verifica_escreve(No* temp) {
     if (temp == NULL) {
       printf("\nArvore vazia!\n");
-    }else if (!verifica_AVL(temp)) {
-      printf("\nArvore nao esta balanceada(AVL)!\n");
+    /*}else if (!verifica_AVL(temp)) {
+      printf("\nArvore nao esta balanceada(AVL)!\n");*/
     }else{
       listagem(temp);
       printf("\n");
@@ -138,6 +143,20 @@ void direitaEsquerda(No** r) {
   }
   b->balanceamento = 0;
   *r = b;
+}
+
+No *rotacao_simples_direita(No *t) {
+    No *q = t->esquerda;
+    t->esquerda = q->direita;
+    q->direita = t;
+    return q;
+}
+
+No *rotacao_simples_esquerda(No *t) {
+    No *q = t->direita;
+    t->direita = q->esquerda;
+    q->esquerda = t;
+    return q;
 }
 
 // Função que procura local em que novo nó deve ser incluído
@@ -228,6 +247,120 @@ int insere(No **t) {
   return aux_insere(t, valor, &cresceu);
 }
 
+//Funçães que retorna o endereço do menor nó da árvore.
+No *menor_no_arvore(No *t) {
+    No *aux = t;
+    while (aux->esquerda != NULL) {  //Procurar o nó mais a esquerda (menor nó da árvore).
+        aux = aux->esquerda;
+    }
+    return aux;                 //Retornar o endereço do menor nó da árvore.
+}
+
+//Função que verifica se um nó está balanceado e faz as rotações necessárias.
+No *verifica_balanceamento(No *t) {
+    int fb;
+    fb = verifica_AVL(t);    //Após inserir o nó para esq ou dir, verificar Fator de bal.
+    if (fb < -1) {
+        if (verifica_AVL(t->esquerda) > 0) {      //Rotação dupla a direita.
+            t->esquerda = rotacao_simples_esquerda(t->esquerda);
+        }
+        t = rotacao_simples_direita(t);             //Rotação simples a esquerda.
+    }
+    else if (fb > 1) {
+        if (verifica_AVL(t->direita) < 0) {      //Rotação dupla a esquerda.
+            t->direita = rotacao_simples_direita(t->direita);
+        }
+        t = rotacao_simples_esquerda(t);            //Rotação simples a direita.
+    }
+    return t;
+}
+
+//Função que remove um nó que é folha (não possui filhos).
+No *remover_folha(No *t) {
+    printf("\nRegistro %d removido com sucesso!\n", t->valor);
+    free(t);
+    return NULL;
+}
+
+No *remover_1filho_esquerda(No *t) {
+    No *aux = t->esquerda;
+    printf("\nRegistro %d removido com sucesso!\n", t->valor);
+    free(t);
+    return aux;
+}
+
+No *remover_1filho_direita(No *t) {
+    No *aux = t->direita;
+    printf("\nRegistro %d removido com sucesso!\n", t->valor);
+    free(t);
+    return aux;
+}
+
+No *remover_2filhos(No *t) {
+    No *aux;
+    int auxx;
+    aux = menor_no_arvore(t->direita);  //auxiliar recebe o endereço do menor nó da árvore.
+    auxx = aux->valor;                     //guardar o valor do auxiliar em uma variável x.
+    t = remover_no_arvore(t->esquerda,auxx);     //remover da árvore o nó que substituirá o nó com 2 filhos.
+
+  t->valor = auxx;                       //substituir o valor do nó com 2 filhos.
+  return t;
+
+
+}
+
+//Função para verificar o tipo de nó que será removido.
+No *remover_no(No *t) {
+    //Verificar se o nó é uma folha (Não possui filhos).
+    if (t->direita == NULL && t->esquerda == NULL) {
+        t = remover_folha(t);
+    }
+    else {
+        if (t->direita == NULL) {
+            //printf("O no %d possui 1 filho para esquerda.\n", r->n);
+            t = remover_1filho_esquerda(t);
+        }
+        else {
+            if (t->esquerda == NULL) {
+                //printf("O no %d possui 1 filho para direita.\n", r->n);
+                t = remover_1filho_direita(t);
+            }
+            else {
+                t = remover_2filhos(t);
+            }
+        }
+    }
+    return t;
+}
+
+No *remover_no_arvore(No *t, int valor) {
+    //Verificar se a árvore não está vazia.
+    if (t != NULL) {
+        //Se a árvore não está vazia, buscar o elemento x.
+        if (t->valor == valor) {    //1 - Verificar se o elemento x está na raiz.
+            t = remover_no(t);  //Chamar a função para remover o nó.
+            t = NULL;
+        }
+        else {
+            //Se x não está na raiz, verificar para qual lado x está.
+            if (valor < t->valor) {
+                //Fazer chamada recursiva para a esquerda.
+                t->esquerda = remover_no_arvore(t->esquerda, valor);
+            }
+            else {
+                //Fazer chamada recursiva para a direita.
+                t->direita = remover_no_arvore(t->direita, valor);
+            }
+            t = verifica_balanceamento(t);
+            //Verificar balanceamento da árvore.
+        }
+    }
+    else {
+        printf("Elemento nao encontrado: %d\n", valor);
+    }
+    return t;
+}
+
 char menuPrincipal() {
     int opcao;
     printf("|--------------------------|\n");
@@ -244,7 +377,7 @@ char menuPrincipal() {
 }
 
 int main() {
-    int opcao;
+    int opcao, remove;
     No *t = NULL;
 
     do {
@@ -257,7 +390,9 @@ int main() {
                 verifica_escreve(t);
                 break;
             case 3:
-                printf("Deleta\n");
+                printf("\nDigite o valor que deseja remover da arvore: \n");
+                scanf("%d", &remove);
+                remover_no_arvore(t, remove);
                 break;
             case 0:
                 exit(0);
